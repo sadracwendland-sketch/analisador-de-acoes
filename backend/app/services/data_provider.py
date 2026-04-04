@@ -1,7 +1,7 @@
 from functools import lru_cache
 import yfinance as yf
 
-from app.schemas.market import MarketPayload  # 👈 USE ESSE (MAIS SEGURO)
+from app.schemas import MarketPayload
 from app.config import SUPPORTED_PERIODS
 
 
