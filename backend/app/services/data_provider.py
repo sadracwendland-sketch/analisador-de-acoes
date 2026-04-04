@@ -1,8 +1,8 @@
 from functools import lru_cache
 import yfinance as yf
 
-from app.schemas import MarketPayload  # 👈 ESSENCIAL
-from app.config import SUPPORTED_PERIODS  # 👈 necessário se ainda não tiver
+from app.schemas.market import MarketPayload  # 👈 USE ESSE (MAIS SEGURO)
+from app.config import SUPPORTED_PERIODS
 
 
 @lru_cache(maxsize=32)
