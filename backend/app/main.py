@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -8,6 +10,7 @@ from app.schemas import AnalysisResponse
 from app.services.pipeline import run_full_analysis
 
 app = FastAPI(title=settings.app_name, version="1.0.0")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -35,6 +38,29 @@ def analyze(
     horizon: int = Query(settings.default_horizon, ge=5, le=10),
 ):
     try:
-        return run_full_analysis(ticker=ticker, period=period, capital=capital, horizon=horizon)
-    except Exception as exc:
+        return run_full_analysis(
+            ticker=ticker,
+            period=period,
+            capital=capital,
+            horizon=horizon,
+        )
+    except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="Erro interno na análise") from exc
+
+
+# =========================
+# 🔧 FIX RENDER (CRÍTICO)
+# =========================
+if __name__ == "__main__":
+    import uvicorn
+
+    port = int(os.environ.get("PORT", 8000))  # 👈 ESSENCIAL
+
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=port,
+        reload=False,
+    )
