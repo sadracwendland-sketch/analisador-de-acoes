@@ -27,17 +27,87 @@ def dataframe_to_records(df: pd.DataFrame) -> list[dict]:
 def run_full_analysis(ticker: str, period: str, capital: float, horizon: int) -> dict:
     payload = provider.get_market_data(ticker, period)
     analysis_df = compute_indicators(payload.analysis_history)
-    signal = generate_signal(analysis_df.dropna()) if len(analysis_df.dropna()) >= 35 else {"label": "ESPERAR", "emoji": "⏸️", "confidence": 50.0, "score": 0.0, "reasons": ["Histórico insuficiente para gerar sinal confiável."]}
-    forecast = forecast_with_lstm(compute_indicators(payload.daily_history)["close_used"], horizon=horizon)
-    risk = calculate_risk_metrics(analysis_df.dropna(), capital=capital)
-    ibov = provider.get_ibov_history(payload.daily_history.index.min(), payload.daily_history.index.max())
-    cdi = provider.get_cdi_daily(payload.daily_history.index.min(), payload.daily_history.index.max())
-    backtest = run_backtest(payload.daily_history, ibov, cdi)
 
-    close_used = analysis_df["close_used"].dropna()
+    clean_df = analysis_df.dropna()
+
+    # =========================
+    # 🔧 SIGNAL (mantido)
+    # =========================
+    signal = generate_signal(clean_df) if len(clean_df) >= 35 else {
+        "label": "ESPERAR",
+        "emoji": "⏸️",
+        "confidence": 50.0,
+        "score": 0.0,
+        "reasons": ["Histórico insuficiente para gerar sinal confiável."]
+    }
+
+    # =========================
+    # 🔧 FORECAST (corrigido)
+    # =========================
+    try:
+        forecast = forecast_with_lstm(
+            compute_indicators(payload.daily_history)["close_used"],
+            horizon=horizon
+        )
+    except Exception as e:
+        print(f"Erro forecast: {e}")
+        forecast = type("ForecastFallback", (), {
+            "predictions": [],
+            "trend": "neutro",
+            "expected_return_pct": 0.0,
+            "horizon_days": horizon,
+            "model_name": "fallback",
+            "note": "Erro no modelo LSTM"
+        })()
+
+    # =========================
+    # 🔧 RISK (corrigido)
+    # =========================
+    try:
+        risk = calculate_risk_metrics(clean_df, capital=capital)
+    except Exception as e:
+        print(f"Erro risk: {e}")
+        risk = {}
+
+    # =========================
+    # 🔧 BACKTEST (corrigido)
+    # =========================
+    try:
+        ibov = provider.get_ibov_history(payload.daily_history.index.min(), payload.daily_history.index.max())
+        cdi = provider.get_cdi_daily(payload.daily_history.index.min(), payload.daily_history.index.max())
+        backtest = run_backtest(payload.daily_history, ibov, cdi)
+    except Exception as e:
+        print(f"Erro backtest: {e}")
+        ibov = pd.Series(dtype=float)
+        cdi = pd.Series(dtype=float)
+        backtest = {
+            "stats": {},
+            "trades": [],
+            "equity_curve": []
+        }
+
+    # =========================
+    # 🔧 PREÇO (corrigido)
+    # =========================
+    close_used = analysis_df.get("close_used")
+
+    if close_used is None or close_used.dropna().empty:
+        raise ValueError("Sem dados de preço válidos")
+
+    close_used = close_used.dropna()
+
     last_price = float(close_used.iloc[-1])
     previous = float(close_used.iloc[-2]) if len(close_used) > 1 else last_price
     price_change = ((last_price / previous) - 1) * 100 if previous else 0.0
+
+    # =========================
+    # 🔧 SAFE INDICATORS
+    # =========================
+    def safe_get(df, col, default=0.0, precision=4):
+        try:
+            return round(float(df[col].iloc[-1]), precision)
+        except:
+            return default
 
     return {
         "ticker": payload.ticker,
@@ -49,16 +119,16 @@ def run_full_analysis(ticker: str, period: str, capital: float, horizon: int) ->
         "market_source": payload.source,
         "price_history": dataframe_to_records(analysis_df.tail(300)),
         "indicators": {
-            "sma10": round(float(analysis_df["sma10"].iloc[-1]), 4),
-            "sma30": round(float(analysis_df["sma30"].iloc[-1]), 4),
-            "rsi14": round(float(analysis_df["rsi14"].iloc[-1]), 2),
-            "macd": round(float(analysis_df["macd"].iloc[-1]), 4),
-            "macd_signal": round(float(analysis_df["macd_signal"].iloc[-1]), 4),
-            "macd_hist": round(float(analysis_df["macd_hist"].iloc[-1]), 4),
-            "bb_upper": round(float(analysis_df["bb_upper"].iloc[-1]), 4),
-            "bb_mid": round(float(analysis_df["bb_mid"].iloc[-1]), 4),
-            "bb_lower": round(float(analysis_df["bb_lower"].iloc[-1]), 4),
-            "atr14": round(float(analysis_df["atr14"].iloc[-1]), 4),
+            "sma10": safe_get(analysis_df, "sma10"),
+            "sma30": safe_get(analysis_df, "sma30"),
+            "rsi14": safe_get(analysis_df, "rsi14", precision=2),
+            "macd": safe_get(analysis_df, "macd"),
+            "macd_signal": safe_get(analysis_df, "macd_signal"),
+            "macd_hist": safe_get(analysis_df, "macd_hist"),
+            "bb_upper": safe_get(analysis_df, "bb_upper"),
+            "bb_mid": safe_get(analysis_df, "bb_mid"),
+            "bb_lower": safe_get(analysis_df, "bb_lower"),
+            "atr14": safe_get(analysis_df, "atr14"),
         },
         "signal": signal,
         "forecast": {
