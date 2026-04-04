@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: stock-analyzer-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    rootDir: ./backend
+    autoDeploy: true
