@@ -3,22 +3,34 @@ import requests
 
 st.title("📈 Stock Analyzer")
 
-API_URL = "https://SEU-APP-RENDER.onrender.com"
+API_URL = "https://stock-analyzer-api-9f95.onrender.com"
 
 ticker = st.text_input("Ticker", "PETR4.SA")
 
 if st.button("Analisar"):
     try:
-        response = requests.get(
-            f"{API_URL}/api/analyze",
-            params={"ticker": ticker, "period": "1y", "capital": 100000, "horizon": 7},
-            timeout=60
-        )
+        with st.spinner("Buscando dados..."):
+            response = requests.get(
+                f"{API_URL}/api/analyze",
+                params={
+                    "ticker": ticker,
+                    "period": "1y",
+                    "capital": 100000,
+                    "horizon": 7
+                },
+                timeout=60
+            )
 
-        data = response.json()
+            # 👇 ESSENCIAL (evita erro silencioso)
+            response.raise_for_status()
 
-        st.success("Dados carregados")
+            data = response.json()
+
+        st.success("Dados carregados com sucesso")
         st.json(data)
 
+    except requests.exceptions.RequestException as e:
+        st.error(f"Erro na API: {e}")
+
     except Exception as e:
-        st.error(f"Erro: {e}")
+        st.error(f"Erro inesperado: {e}")
