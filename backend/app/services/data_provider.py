@@ -1,4 +1,9 @@
 from functools import lru_cache
+import yfinance as yf
+
+from app.schemas import MarketPayload  # 👈 ESSENCIAL
+from app.config import SUPPORTED_PERIODS  # 👈 necessário se ainda não tiver
+
 
 @lru_cache(maxsize=32)
 def _cached_yf_history(ticker: str, period: str, interval: str):
