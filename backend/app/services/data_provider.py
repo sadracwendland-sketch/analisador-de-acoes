@@ -73,7 +73,7 @@ def _fetch_yfinance(self, ticker: str, period: str) -> MarketPayload | None:
         )
 
     except Exception as e:
-        print(f"[ERRO CRÍTICO YFINANCE] {e}")
+        print(f"[ERRO] Falha no fetch do yfinance para {ticker}: {e}")
         return None
         
 
