@@ -27,36 +27,55 @@ class DataProvider:
 
         return df.dropna(how="all")
 
-    def _fetch_yfinance(self, ticker: str, period: str) -> MarketPayload | None:
-        try:
-            config = SUPPORTED_PERIODS[period]
+def _fetch_yfinance(self, ticker: str, period: str) -> MarketPayload | None:
+    try:
+        config = SUPPORTED_PERIODS.get(period)
 
-            df = _cached_yf_history(ticker, config["range"], config["interval"])
-            df = self._clean_history(df)
+        if not config:
+            raise ValueError(f"Período inválido: {period}")
 
-            if df.empty:
-                return None
+        df = _cached_yf_history(ticker, config["range"], config["interval"])
 
-            tk = yf.Ticker(ticker)
-
-            info = {}
-            try:
-                info = tk.fast_info or {}
-            except Exception:
-                pass
-
-            return MarketPayload(
-                ticker=ticker,
-                company_name=None,
-                currency=info.get("currency", "USD"),
-                source="yfinance",
-                analysis_history=df,
-                daily_history=df.copy(),
-            )
-
-        except Exception as e:
-            print(f"Erro yfinance: {e}")
+        if df is None or df.empty:
+            print(f"[ERRO] yfinance vazio para {ticker}")
             return None
+
+        df = self._clean_history(df)
+
+        if df is None or df.empty:
+            print(f"[ERRO] Dados limpos vazios para {ticker}")
+            return None
+
+        # 🔥 GARANTIA CRÍTICA
+        if "Close" not in df.columns and "Adj Close" not in df.columns:
+            print(f"[ERRO] Sem coluna de preço")
+            return None
+
+        tk = yf.Ticker(ticker)
+
+        currency = "USD"
+        company_name = None
+
+        try:
+            info = tk.fast_info or {}
+            if isinstance(info, dict):
+                currency = info.get("currency", "USD")
+        except Exception:
+            pass
+
+        return MarketPayload(
+            ticker=ticker,
+            company_name=company_name,
+            currency=currency,
+            source="yfinance",
+            analysis_history=df,
+            daily_history=df.copy(),
+        )
+
+    except Exception as e:
+        print(f"[ERRO CRÍTICO YFINANCE] {e}")
+        return None
+        
 
     def get_market_data(self, ticker: str, period: str) -> MarketPayload:
         data = self._fetch_yfinance(ticker, period)
