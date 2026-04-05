@@ -6,7 +6,11 @@ import requests
 
 st.title("📈 Stock Analyzer")
 
-API_URL = "https://stock-analyzer-api-9f95.onrender.com"
+response = requests.get(
+    f"{https://stock-analyzer-api-9f95.onrender.com}/analyze",  # 🔥 corrigido
+    params={"ticker": ticker},
+    timeout=20  # reduz tempo de espera
+)
 
 ticker = st.text_input("Ticker", "PETR4.SA")
 
