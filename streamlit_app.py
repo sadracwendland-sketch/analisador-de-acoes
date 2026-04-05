@@ -6,11 +6,7 @@ import requests
 
 st.title("📈 Stock Analyzer")
 
-response = requests.get(
-    f"{https://stock-analyzer-api-9f95.onrender.com}/analyze",  # 🔥 corrigido
-    params={"ticker": ticker},
-    timeout=20  # reduz tempo de espera
-)
+API_URL = "https://stock-analyzer-api-9f95.onrender.com"
 
 ticker = st.text_input("Ticker", "PETR4.SA")
 
@@ -18,19 +14,17 @@ if st.button("Analisar"):
     try:
         with st.spinner("Buscando dados..."):
             response = requests.get(
-                f"{API_URL}/api/analyze",
+                f"{API_URL}/analyze",
                 params={
                     "ticker": ticker,
                     "period": "1y",
                     "capital": 100000,
                     "horizon": 7
                 },
-                timeout=60
+                timeout=20
             )
 
-            # 👇 ESSENCIAL (evita erro silencioso)
             response.raise_for_status()
-
             data = response.json()
 
         st.success("Dados carregados com sucesso")
