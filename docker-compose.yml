@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend_Dockerfile
+    container_name: stock-analyzer-backend
+    environment:
+      BRAPI_API_KEY: ${BRAPI_API_KEY:-}
+      DEFAULT_CAPITAL: ${DEFAULT_CAPITAL:-100000}
+      DEFAULT_FORECAST_HORIZON: ${DEFAULT_FORECAST_HORIZON:-7}
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  web:
+    build:
+      context: .
+      dockerfile: web_Dockerfile
+    command: streamlit run streamlit_app.py --server.port 8501 --server.address 0.0.0.0
+    container_name: stock-analyzer-web
+    environment:
+      API_BASE_URL: http://backend:8000
+    ports:
+      - "8501:8501"
+    depends_on:
+      backend:
+        condition: service_healthy

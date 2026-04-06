@@ -1,0 +1,6 @@
+# Dependências essenciais para o Streamlit App (v8 Ultra Light)
+streamlit
+plotly
+requests
+pandas
+yfinance

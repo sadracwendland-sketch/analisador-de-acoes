@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: stock-analyzer-api
+    runtime: docker
+    dockerfilePath: backend_Dockerfile
+    rootDir: .
+    autoDeploy: true
+    healthCheckPath: /health
+
+  - type: web
+    name: stock-analyzer-web
+    runtime: docker
+    dockerfilePath: web_Dockerfile
+    rootDir: .
+    autoDeploy: true
+    # Comando de inicialização para Streamlit
+    startCommand: "streamlit run streamlit_app.py --server.port $PORT --server.address 0.0.0.0"
+    envVars:
+      - key: API_BASE_URL
+        value: https://stock-analyzer-api.onrender.com

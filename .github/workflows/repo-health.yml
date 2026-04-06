@@ -1,0 +1,22 @@
+name: Repo Health
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 12 * * 1'
+
+jobs:
+  basic-health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate core files
+        run: |
+          test -f README.md
+          test -f LICENSE
+          test -f CONTRIBUTING.md
+          test -f SECURITY.md
+          test -f CODE_OF_CONDUCT.md
+          test -f CHANGELOG.md

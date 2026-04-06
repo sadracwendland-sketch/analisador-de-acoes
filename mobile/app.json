@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "Stock Analyzer Pro",
+    "slug": "stock-analyzer-pro",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "com.genspark.stockanalyzerpro"
+    },
+    "ios": {
+      "bundleIdentifier": "com.genspark.stockanalyzerpro"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "replace-with-your-eas-project-id"
+      }
+    }
+  }
+}
